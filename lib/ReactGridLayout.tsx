@@ -25,13 +25,10 @@ import {
   DragOverEvent,
   Layout,
   DroppingPosition,
-  LayoutItem
+  LayoutItem,
+  ReactChildren
 } from "./utils";
 import { PositionParams } from "./calculateUtils";
-
-// TypeScript types
-export type ReactChildrenArray<T> = Array<React.ReactElement<T>>;
-export type ReactElement<T = any> = React.ReactElement<T>;
 
 interface State {
   activeDrag: LayoutItem | null;
@@ -41,9 +38,9 @@ interface State {
   oldLayout: Layout | null;
   oldResizeItem: LayoutItem | null;
   resizing: boolean;
-  droppingDOMNode: ReactElement<any> | null;
+  droppingDOMNode: React.ReactElement<any> | null;
   droppingPosition?: DroppingPosition;
-  children: ReactChildrenArray<ReactElement<any>>;
+  children: ReactChildren;
   compactType?: CompactType;
   propsLayout?: Layout;
 }
@@ -191,7 +188,7 @@ export default class ReactGridLayout extends React.Component<Props, State> {
     );
   }
 
-  onDragStart(i: string, x: number, y: number, event: GridDragEvent): void {
+  onDragStart = (i: string, x: number, y: number, event: GridDragEvent): void => {
     const { layout } = this.state;
     const l = getLayoutItem(layout, i);
     if (!l) return;
@@ -209,9 +206,9 @@ export default class ReactGridLayout extends React.Component<Props, State> {
       activeDrag: placeholder
     });
     return this.props.onDragStart(layout, l, l, null, event.e, event.node);
-  }
+  };
 
-  onDrag(i: string, x: number, y: number, event: GridDragEvent): void {
+  onDrag = (i: string, x: number, y: number, event: GridDragEvent): void => {
     const { oldDragItem } = this.state;
     let { layout } = this.state;
     const { cols, allowOverlap, preventCollision } = this.props;
@@ -244,9 +241,9 @@ export default class ReactGridLayout extends React.Component<Props, State> {
         : compact(layout, compactType(this.props), cols),
       activeDrag: placeholder
     });
-  }
+  };
 
-  onDragStop(i: string, x: number, y: number, event: GridDragEvent): void {
+  onDragStop = (i: string, x: number, y: number, event: GridDragEvent): void => {
     if (!this.state.activeDrag) return;
     const { oldDragItem } = this.state;
     let { layout } = this.state;
@@ -277,7 +274,7 @@ export default class ReactGridLayout extends React.Component<Props, State> {
       oldLayout: null
     });
     this.onLayoutMaybeChanged(newLayout, oldLayout);
-  }
+  };
 
   onLayoutMaybeChanged(newLayout: Layout, oldLayout: Layout | null) {
     if (!oldLayout) oldLayout = this.state.layout;
@@ -286,7 +283,7 @@ export default class ReactGridLayout extends React.Component<Props, State> {
     }
   }
 
-  onResizeStart(i: string, w: number, h: number, event: GridResizeEvent): void {
+  onResizeStart = (i: string, w: number, h: number, event: GridResizeEvent): void => {
     const { layout } = this.state;
     const l = getLayoutItem(layout, i);
     if (!l) return;
@@ -296,14 +293,14 @@ export default class ReactGridLayout extends React.Component<Props, State> {
       resizing: true
     });
     this.props.onResizeStart(layout, l, l, null, event.e, event.node);
-  }
+  };
 
-  onResize(
+  onResize = (
     i: string,
     w: number,
     h: number,
     event: GridResizeEvent
-  ): void {
+  ): void => {
     const { oldResizeItem } = this.state;
     const { layout } = this.state;
     const { cols, preventCollision, allowOverlap } = this.props;
@@ -380,9 +377,9 @@ export default class ReactGridLayout extends React.Component<Props, State> {
         : compact(finalLayout, compactType(this.props), cols),
       activeDrag: placeholder
     });
-  }
+  };
 
-  onResizeStop(i: string, w: number, h: number, event: GridResizeEvent): void {
+  onResizeStop = (i: string, w: number, h: number, event: GridResizeEvent): void => {
     const { layout, oldResizeItem } = this.state;
     const { cols, allowOverlap } = this.props;
     const l = getLayoutItem(layout, i);
@@ -399,9 +396,9 @@ export default class ReactGridLayout extends React.Component<Props, State> {
       resizing: false
     });
     this.onLayoutMaybeChanged(newLayout, oldLayout);
-  }
+  };
 
-  placeholder(): ReactElement<any> | null {
+  placeholder(): React.ReactElement<any> | null {
     const { activeDrag } = this.state;
     if (!activeDrag) return null;
     const {
@@ -442,9 +439,9 @@ export default class ReactGridLayout extends React.Component<Props, State> {
   }
 
   processGridItem(
-    child: ReactElement<any>,
+    child: React.ReactElement<any>,
     isDroppingItem?: boolean
-  ): ReactElement<any> | null {
+  ): React.ReactElement<any> | null {
     if (!child || !child.key) return null;
     const l = getLayoutItem(this.state.layout, String(child.key));
     if (!l) return null;
@@ -517,7 +514,7 @@ export default class ReactGridLayout extends React.Component<Props, State> {
     );
   }
 
-  onDragOver(e: DragOverEvent): void | false {
+  onDragOver = (e: DragOverEvent): void | false => {
     e.preventDefault();
     e.stopPropagation();
     if (
@@ -591,9 +588,9 @@ export default class ReactGridLayout extends React.Component<Props, State> {
         this.setState({ droppingPosition });
       }
     }
-  }
+  };
 
-  removeDroppingPlaceholder(): void {
+  removeDroppingPlaceholder = (): void => {
     const { droppingItem, cols } = this.props;
     const { layout } = this.state;
     const newLayout = compact(
@@ -607,45 +604,37 @@ export default class ReactGridLayout extends React.Component<Props, State> {
       droppingDOMNode: null,
       droppingPosition: undefined
     });
-  }
+  };
 
-  onDragLeave: EventHandler = e => {
-    e.preventDefault(); // Prevent any browser native action
+  onDragLeave = (e: React.DragEvent<HTMLDivElement>): void => {
+    e.preventDefault();
     e.stopPropagation();
     this.dragEnterCounter--;
 
-    // onDragLeave can be triggered on each layout's child.
-    // But we know that count of dragEnter and dragLeave events
-    // will be balanced after leaving the layout's container
-    // so we can increase and decrease count of dragEnter and
-    // when it'll be equal to 0 we'll remove the placeholder
     if (this.dragEnterCounter === 0) {
       this.removeDroppingPlaceholder();
     }
   };
 
-  onDragEnter: EventHandler = e => {
-    e.preventDefault(); // Prevent any browser native action
+  onDragEnter = (e: React.DragEvent<HTMLDivElement>): void => {
+    e.preventDefault();
     e.stopPropagation();
     this.dragEnterCounter++;
   };
 
-  onDrop: EventHandler = (e: Event) => {
-    e.preventDefault(); // Prevent any browser native action
+  onDrop = (e: React.DragEvent<HTMLDivElement>): void => {
+    e.preventDefault();
     e.stopPropagation();
     const { droppingItem } = this.props;
     const { layout } = this.state;
     const item = layout.find(l => l.i === droppingItem.i);
 
-    // reset dragEnter counter on drop
     this.dragEnterCounter = 0;
-
     this.removeDroppingPlaceholder();
-
-    this.props.onDrop(layout, item, e);
+    this.props.onDrop(layout, item || null, e);
   };
 
-  render(): React.Element<"div"> {
+  render(): React.ReactElement<"div"> {
     const { className, style, isDroppable, innerRef } = this.props;
 
     const mergedClassName = clsx(layoutClassName, className);
@@ -665,7 +654,7 @@ export default class ReactGridLayout extends React.Component<Props, State> {
         onDragOver={isDroppable ? this.onDragOver : noop}
       >
         {React.Children.map(this.props.children, child =>
-          this.processGridItem(child)
+          this.processGridItem(child as React.ReactElement<any>)
         )}
         {isDroppable &&
           this.state.droppingDOMNode &&
