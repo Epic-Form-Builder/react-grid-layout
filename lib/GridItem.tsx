@@ -1,4 +1,3 @@
-// @flow
 import React from "react";
 import { flushSync } from "react-dom";
 import PropTypes from "prop-types";
@@ -315,7 +314,7 @@ export default class GridItem extends React.Component<Props, State> {
    * @param  {Object} pos Position object with width, height, left, top.
    * @return {Object}     Style object.
    */
-  createStyle(pos: Position): { [key: string]: ?string } {
+  createStyle(pos: Position): { [key: string]: string | undefined } {
     const { usePercentages, containerWidth, useCSSTransforms } = this.props;
 
     let style;
