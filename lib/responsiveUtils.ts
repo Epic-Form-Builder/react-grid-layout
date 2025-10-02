@@ -1,34 +1,25 @@
-// @flow
-
-import { cloneLayout, compact, correctBounds } from "./utils";
-
-import type { CompactType, Layout } from "./utils";
+import { cloneLayout, compact, correctBounds, CompactType, Layout } from "./utils";
 
 export type Breakpoint = string;
 export type DefaultBreakpoints = "lg" | "md" | "sm" | "xs" | "xxs";
 
-// + indicates read-only
-export type ResponsiveLayout<T: Breakpoint> = {
-  +[breakpoint: T]: Layout
-};
-export type Breakpoints<T: Breakpoint> = {
-  +[breakpoint: T]: number
-};
+export type ResponsiveLayout = Record<Breakpoint, Layout>;
+export type Breakpoints = Record<Breakpoint, number>;
 
 export type OnLayoutChangeCallback = (
-  Layout,
-  { [key: Breakpoint]: Layout }
+  layout: Layout,
+  layouts: Record<Breakpoint, Layout>
 ) => void;
 
 /**
  * Given a width, find the highest breakpoint that matches is valid for it (width > breakpoint).
  *
- * @param  {Object} breakpoints Breakpoints object (e.g. {lg: 1200, md: 960, ...})
- * @param  {Number} width Screen width.
- * @return {String}       Highest breakpoint that is less than width.
+ * @param breakpoints Breakpoints object (e.g. {lg: 1200, md: 960, ...})
+ * @param width Screen width.
+ * @return Highest breakpoint that is less than width.
  */
 export function getBreakpointFromWidth(
-  breakpoints: Breakpoints<Breakpoint>,
+  breakpoints: Breakpoints,
   width: number
 ): Breakpoint {
   const sorted = sortBreakpoints(breakpoints);
@@ -42,13 +33,13 @@ export function getBreakpointFromWidth(
 
 /**
  * Given a breakpoint, get the # of cols set for it.
- * @param  {String} breakpoint Breakpoint name.
- * @param  {Object} cols       Map of breakpoints to cols.
- * @return {Number}            Number of cols.
+ * @param breakpoint Breakpoint name.
+ * @param cols Map of breakpoints to cols.
+ * @return Number of cols.
  */
 export function getColsFromBreakpoint(
   breakpoint: Breakpoint,
-  cols: Breakpoints<Breakpoint>
+  cols: Breakpoints
 ): number {
   if (!cols[breakpoint]) {
     throw new Error(
@@ -65,18 +56,17 @@ export function getColsFromBreakpoint(
  *
  * This finds the layout above the new one and generates from it, if it exists.
  *
- * @param  {Object} layouts     Existing layouts.
- * @param  {Array} breakpoints All breakpoints.
- * @param  {String} breakpoint New breakpoint.
- * @param  {String} breakpoint Last breakpoint (for fallback).
- * @param  {Number} cols       Column count at new breakpoint.
- * @param  {Boolean} verticalCompact Whether or not to compact the layout
- *   vertically.
- * @return {Array}             New layout.
+ * @param layouts Existing layouts.
+ * @param breakpoints All breakpoints.
+ * @param breakpoint New breakpoint.
+ * @param lastBreakpoint Last breakpoint (for fallback).
+ * @param cols Column count at new breakpoint.
+ * @param compactType Whether or not to compact the layout vertically.
+ * @return New layout.
  */
 export function findOrGenerateResponsiveLayout(
-  layouts: ResponsiveLayout<Breakpoint>,
-  breakpoints: Breakpoints<Breakpoint>,
+  layouts: ResponsiveLayout,
+  breakpoints: Breakpoints,
   breakpoint: Breakpoint,
   lastBreakpoint: Breakpoint,
   cols: number,
@@ -105,11 +95,11 @@ export function findOrGenerateResponsiveLayout(
  * Given breakpoints, return an array of breakpoints sorted by width. This is usually
  * e.g. ['xxs', 'xs', 'sm', ...]
  *
- * @param  {Object} breakpoints Key/value pair of breakpoint names to widths.
- * @return {Array}              Sorted breakpoints.
+ * @param breakpoints Key/value pair of breakpoint names to widths.
+ * @return Sorted breakpoints.
  */
 export function sortBreakpoints(
-  breakpoints: Breakpoints<Breakpoint>
+  breakpoints: Breakpoints
 ): Array<Breakpoint> {
   const keys: Array<string> = Object.keys(breakpoints);
   return keys.sort(function (a, b) {

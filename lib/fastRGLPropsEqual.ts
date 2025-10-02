@@ -1,46 +1,56 @@
-// @preval
+import { Props } from "./ReactGridLayoutPropTypes";
 
-require("@babel/register");
-
-// Fast way to compare RGL props in shouldComponentUpdate.
-// Generates the fastest possible comparison of the type:
-// function (a, b) { return a.className === b.className && a.style === b.style && ... }
-// This avoids enumerating keys, avoids us keeping our own key list, and can be very easily optimized.
-
-const PropTypes = require("prop-types");
-const propTypes = require("./ReactGridLayoutPropTypes").default;
-const keys = Object.keys(propTypes);
-
-// Remove 'children' key as we don't want to compare it
-keys.splice(keys.indexOf("children"), 1);
-
-// Returns a code string indicating what to do here.
-// In most cases we want to do a simple equality comparison,
-// but we have some arrays and tuples and objects we want
-// to do a shallow comparison on.
-function getEqualType(key) {
-  if (
-    [
-      PropTypes.number,
-      PropTypes.bool,
-      PropTypes.string,
-      PropTypes.func
-    ].includes(propTypes[key])
-  ) {
-    return `(a.${key} === b.${key})`;
+function shallowEqual(a: any, b: any): boolean {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  if (Array.isArray(a) && Array.isArray(b)) {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+      if (a[i] !== b[i]) return false;
+    }
+    return true;
   }
-  return `isEqualImpl(a.${key}, b.${key})`;
+  if (typeof a === "object" && typeof b === "object") {
+    const aKeys = Object.keys(a);
+    const bKeys = Object.keys(b);
+    if (aKeys.length !== bKeys.length) return false;
+    for (const key of aKeys) {
+      if (a[key] !== b[key]) return false;
+    }
+    return true;
+  }
+  return false;
 }
 
-// Exports a function that compares a and b. `isEqualImpl` is a required
-// third prop, as we can't otherwise access it.
-module.exports = () =>
-  eval(`
-  function fastRGLPropsEqual(a, b, isEqualImpl) {
-    if (a === b) return true;
-    return (
-      ${keys.map(getEqualType).join(" && ")}
-    );
-  }
-  fastRGLPropsEqual;
-`);
+export function fastRGLPropsEqual(a: Props, b: Props): boolean {
+  if (a === b) return true;
+  return (
+    a.className === b.className &&
+    a.style === b.style &&
+    a.width === b.width &&
+    a.autoSize === b.autoSize &&
+    a.cols === b.cols &&
+    a.draggableCancel === b.draggableCancel &&
+    a.draggableHandle === b.draggableHandle &&
+    a.verticalCompact === b.verticalCompact &&
+    a.compactType === b.compactType &&
+    shallowEqual(a.layout, b.layout) &&
+    shallowEqual(a.margin, b.margin) &&
+    shallowEqual(a.containerPadding, b.containerPadding) &&
+    a.rowHeight === b.rowHeight &&
+    a.maxRows === b.maxRows &&
+    a.isBounded === b.isBounded &&
+    a.isDraggable === b.isDraggable &&
+    a.isResizable === b.isResizable &&
+    a.allowOverlap === b.allowOverlap &&
+    a.preventCollision === b.preventCollision &&
+    a.useCSSTransforms === b.useCSSTransforms &&
+    a.transformScale === b.transformScale &&
+    a.isDroppable === b.isDroppable &&
+    shallowEqual(a.resizeHandles, b.resizeHandles) &&
+    a.resizeHandle === b.resizeHandle &&
+    shallowEqual(a.droppingItem, b.droppingItem) &&
+    a.innerRef === b.innerRef
+    // Note: children are intentionally not compared
+  );
+}

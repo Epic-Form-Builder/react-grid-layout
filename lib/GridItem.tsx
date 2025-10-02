@@ -9,24 +9,7 @@ import {
   perc,
   resizeItemInDirection,
   setTopLeft,
-  setTransform
-} from "./utils";
-import {
-  calcGridItemPosition,
-  calcGridItemWHPx,
-  calcGridColWidth,
-  calcXY,
-  calcWH,
-  clamp
-} from "./calculateUtils";
-import {
-  resizeHandleAxesType,
-  resizeHandleType
-} from "./ReactGridLayoutPropTypes";
-import clsx from "clsx";
-import type { Element as ReactElement, Node as ReactNode } from "react";
-
-import type {
+  setTransform,
   ReactDraggableCallbackData,
   GridDragEvent,
   GridResizeEvent,
@@ -34,95 +17,100 @@ import type {
   Position,
   ResizeHandleAxis
 } from "./utils";
+import {
+  calcGridItemPosition,
+  calcGridItemWHPx,
+  calcGridColWidth,
+  calcXY,
+  calcWH,
+  clamp,
+  PositionParams
+} from "./calculateUtils";
+import {
+  resizeHandleAxesType,
+  resizeHandleType,
+  ResizeHandle,
+  ReactRef
+} from "./ReactGridLayoutPropTypes";
+import clsx from "clsx";
 
-import type { PositionParams } from "./calculateUtils";
-import type { ResizeHandle, ReactRef } from "./ReactGridLayoutPropTypes";
-
-type PartialPosition = { top: number, left: number };
-type GridItemCallback<Data: GridDragEvent | GridResizeEvent> = (
+// TypeScript types
+export type PartialPosition = { top: number; left: number };
+export type GridItemCallback<Data extends GridDragEvent | GridResizeEvent> = (
   i: string,
   w: number,
   h: number,
-  Data
+  data: Data
 ) => void;
 
-type ResizeCallbackData = {
-  node: HTMLElement,
-  size: Position,
-  handle: ResizeHandleAxis
+export type ResizeCallbackData = {
+  node: HTMLElement;
+  size: Position;
+  handle: ResizeHandleAxis;
 };
 
-type GridItemResizeCallback = (
+export type GridItemResizeCallback = (
   e: Event,
   data: ResizeCallbackData,
   position: Position
 ) => void;
 
-type State = {
-  resizing: ?{ top: number, left: number, width: number, height: number },
-  dragging: ?{ top: number, left: number },
-  className: string
+export interface State {
+  resizing: { top: number; left: number; width: number; height: number } | null;
+  dragging: { top: number; left: number } | null;
+  className: string;
+}
+
+export interface Props {
+  children: React.ReactElement<any>;
+  cols: number;
+  containerWidth: number;
+  margin: [number, number];
+  containerPadding: [number, number];
+  rowHeight: number;
+  maxRows: number;
+  isDraggable: boolean;
+  isResizable: boolean;
+  isBounded: boolean;
+  static?: boolean;
+  useCSSTransforms?: boolean;
+  usePercentages?: boolean;
+  transformScale: number;
+  className: string;
+  style?: object;
+  cancel: string;
+  handle: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  minW: number;
+  maxW: number;
+  minH: number;
+  maxH: number;
+  i: string;
+  resizeHandles?: ResizeHandleAxis[];
+  resizeHandle?: ResizeHandle;
+  onDrag?: GridItemCallback<GridDragEvent>;
+  onDragStart?: GridItemCallback<GridDragEvent>;
+  onDragStop?: GridItemCallback<GridDragEvent>;
+  onResize?: GridItemCallback<GridResizeEvent>;
+  onResizeStart?: GridItemCallback<GridResizeEvent>;
+  onResizeStop?: GridItemCallback<GridResizeEvent>;
+  droppingPosition?: DroppingPosition;
+}
+
+export type DefaultProps = {
+  className: string;
+  cancel: string;
+  handle: string;
+  minH: number;
+  minW: number;
+  maxH: number;
+  maxW: number;
+  transformScale: number;
 };
 
-type Props = {
-  children: ReactElement<any>,
-  cols: number,
-  containerWidth: number,
-  margin: [number, number],
-  containerPadding: [number, number],
-  rowHeight: number,
-  maxRows: number,
-  isDraggable: boolean,
-  isResizable: boolean,
-  isBounded: boolean,
-  static?: boolean,
-  useCSSTransforms?: boolean,
-  usePercentages?: boolean,
-  transformScale: number,
-  droppingPosition?: DroppingPosition,
-
-  className: string,
-  style?: Object,
-  // Draggability
-  cancel: string,
-  handle: string,
-
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-
-  minW: number,
-  maxW: number,
-  minH: number,
-  maxH: number,
-  i: string,
-
-  resizeHandles?: ResizeHandleAxis[],
-  resizeHandle?: ResizeHandle,
-
-  onDrag?: GridItemCallback<GridDragEvent>,
-  onDragStart?: GridItemCallback<GridDragEvent>,
-  onDragStop?: GridItemCallback<GridDragEvent>,
-  onResize?: GridItemCallback<GridResizeEvent>,
-  onResizeStart?: GridItemCallback<GridResizeEvent>,
-  onResizeStop?: GridItemCallback<GridResizeEvent>
-};
-
-type DefaultProps = {
-  className: string,
-  cancel: string,
-  handle: string,
-  minH: number,
-  minW: number,
-  maxH: number,
-  maxW: number,
-  transformScale: number
-};
-
-/**
- * An individual item within a ReactGridLayout.
- */
 export default class GridItem extends React.Component<Props, State> {
   static propTypes = {
     // Children must be only a single element
@@ -354,9 +342,9 @@ export default class GridItem extends React.Component<Props, State> {
    * @return {Element}          Child wrapped in Draggable.
    */
   mixinDraggable(
-    child: ReactElement<any>,
+    child: React.ReactElement<any>,
     isDraggable: boolean
-  ): ReactElement<any> {
+  ): React.ReactElement<any> {
     return (
       <DraggableCore
         disabled={!isDraggable}
@@ -392,10 +380,10 @@ export default class GridItem extends React.Component<Props, State> {
    * @return {Element}          Child wrapped in Resizable.
    */
   mixinResizable(
-    child: ReactElement<any>,
+    child: React.ReactElement<any>,
     position: Position,
     isResizable: boolean
-  ): ReactElement<any> {
+  ): React.ReactElement<any> {
     const {
       cols,
       minW,
@@ -632,7 +620,7 @@ export default class GridItem extends React.Component<Props, State> {
     handler.call(this, i, w, h, { e, node, size: updatedSize, handle });
   }
 
-  render(): ReactNode {
+  render(): React.ReactNode {
     const {
       x,
       y,

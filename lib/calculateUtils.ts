@@ -1,14 +1,14 @@
-// @flow
-import type { Position } from "./utils";
+// Converted from Flow to TypeScript
+import { Position } from "./utils";
 
-export type PositionParams = {
-  margin: [number, number],
-  containerPadding: [number, number],
-  containerWidth: number,
-  cols: number,
-  rowHeight: number,
-  maxRows: number
-};
+export interface PositionParams {
+  margin: [number, number];
+  containerPadding: [number, number];
+  containerWidth: number;
+  cols: number;
+  rowHeight: number;
+  maxRows: number;
+}
 
 // Helper for generating column width
 export function calcGridColWidth(positionParams: PositionParams): number {
@@ -35,14 +35,14 @@ export function calcGridItemWHPx(
 }
 
 /**
- * Return position on the page given an x, y, w, h.
  * left, top, width, height are all in pixels.
- * @param  {PositionParams} positionParams  Parameters of grid needed for coordinates calculations.
- * @param  {Number}  x                      X coordinate in grid units.
- * @param  {Number}  y                      Y coordinate in grid units.
- * @param  {Number}  w                      W coordinate in grid units.
- * @param  {Number}  h                      H coordinate in grid units.
- * @return {Position}                       Object containing coords.
+ * @param  positionParams  Parameters of grid needed for coordinates calculations.
+ * @param  x  X coordinate in grid units.
+ * @param  y  Y coordinate in grid units.
+ * @param  w  W coordinate in grid units.
+ * @param  h  H coordinate in grid units.
+ * @param  state  Optional state object containing resizing/dragging info.
+ * @return Object containing coords.
  */
 export function calcGridItemPosition(
   positionParams: PositionParams,
@@ -50,53 +50,56 @@ export function calcGridItemPosition(
   y: number,
   w: number,
   h: number,
-  state: ?Object
+  state?: {
+    resizing?: { width: number; height: number; top?: number; left?: number };
+    dragging?: { top: number; left: number };
+  }
 ): Position {
   const { margin, containerPadding, rowHeight } = positionParams;
   const colWidth = calcGridColWidth(positionParams);
-  const out = {};
+
+  let width: number;
+  let height: number;
+  let top: number;
+  let left: number;
 
   // If resizing, use the exact width and height as returned from resizing callbacks.
   if (state && state.resizing) {
-    out.width = Math.round(state.resizing.width);
-    out.height = Math.round(state.resizing.height);
-  }
-  // Otherwise, calculate from grid units.
-  else {
-    out.width = calcGridItemWHPx(w, colWidth, margin[0]);
-    out.height = calcGridItemWHPx(h, rowHeight, margin[1]);
+    width = Math.round(state.resizing.width);
+    height = Math.round(state.resizing.height);
+  } else {
+    width = calcGridItemWHPx(w, colWidth, margin[0]);
+    height = calcGridItemWHPx(h, rowHeight, margin[1]);
   }
 
-  // If dragging, use the exact width and height as returned from dragging callbacks.
+  // If dragging, use the exact top and left as returned from dragging callbacks.
   if (state && state.dragging) {
-    out.top = Math.round(state.dragging.top);
-    out.left = Math.round(state.dragging.left);
+    top = Math.round(state.dragging.top);
+    left = Math.round(state.dragging.left);
   } else if (
     state &&
     state.resizing &&
     typeof state.resizing.top === "number" &&
     typeof state.resizing.left === "number"
   ) {
-    out.top = Math.round(state.resizing.top);
-    out.left = Math.round(state.resizing.left);
-  }
-  // Otherwise, calculate from grid units.
-  else {
-    out.top = Math.round((rowHeight + margin[1]) * y + containerPadding[1]);
-    out.left = Math.round((colWidth + margin[0]) * x + containerPadding[0]);
+    top = Math.round(state.resizing.top!);
+    left = Math.round(state.resizing.left!);
+  } else {
+    top = Math.round((rowHeight + margin[1]) * y + containerPadding[1]);
+    left = Math.round((colWidth + margin[0]) * x + containerPadding[0]);
   }
 
-  return out;
+  return { width, height, top, left };
 }
 
 /**
  * Translate x and y coordinates from pixels to grid units.
- * @param  {PositionParams} positionParams  Parameters of grid needed for coordinates calculations.
- * @param  {Number} top                     Top position (relative to parent) in pixels.
- * @param  {Number} left                    Left position (relative to parent) in pixels.
- * @param  {Number} w                       W coordinate in grid units.
- * @param  {Number} h                       H coordinate in grid units.
- * @return {Object}                         x and y in grid units.
+ * @param  positionParams  Parameters of grid needed for coordinates calculations.
+ * @param  top  Top position (relative to parent) in pixels.
+ * @param  left  Left position (relative to parent) in pixels.
+ * @param  w  W coordinate in grid units.
+ * @param  h  H coordinate in grid units.
+ * @return x and y in grid units.
  */
 export function calcXY(
   positionParams: PositionParams,
@@ -104,7 +107,7 @@ export function calcXY(
   left: number,
   w: number,
   h: number
-): { x: number, y: number } {
+): { x: number; y: number } {
   const { margin, containerPadding, cols, rowHeight, maxRows } = positionParams;
   const colWidth = calcGridColWidth(positionParams);
 
@@ -122,13 +125,13 @@ export function calcXY(
 
 /**
  * Given a height and width in pixel values, calculate grid units.
- * @param  {PositionParams} positionParams  Parameters of grid needed for coordinates calcluations.
- * @param  {Number} height                  Height in pixels.
- * @param  {Number} width                   Width in pixels.
- * @param  {Number} x                       X coordinate in grid units.
- * @param  {Number} y                       Y coordinate in grid units.
- * @param {String} handle Resize Handle.
- * @return {Object}                         w, h as grid units.
+ * @param  positionParams  Parameters of grid needed for coordinates calcluations.
+ * @param  height  Height in pixels.
+ * @param  width  Width in pixels.
+ * @param  x  X coordinate in grid units.
+ * @param  y  Y coordinate in grid units.
+ * @param handle Resize Handle.
+ * @return w, h as grid units.
  */
 export function calcWH(
   positionParams: PositionParams,
@@ -137,7 +140,7 @@ export function calcWH(
   x: number,
   y: number,
   handle: string
-): { w: number, h: number } {
+): { w: number; h: number } {
   const { margin, maxRows, cols, rowHeight } = positionParams;
   const colWidth = calcGridColWidth(positionParams);
 

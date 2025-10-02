@@ -2,7 +2,6 @@ import * as React from "react";
 import PropTypes from "prop-types";
 import ResizeObserver from "resize-observer-polyfill";
 import clsx from "clsx";
-import type { ReactRef } from "../ReactGridLayoutPropTypes";
 
 // TypeScript conversion from Flow
 
